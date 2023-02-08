@@ -1,0 +1,54 @@
+
+
+//Restart Parameter//
+Restart			0	//Restart from input.h5
+
+//Time Range//
+T_Start			1e-5
+T_End			1e-4
+
+//Output Frequency//
+Num_Reports		1e5
+Num_Snapshots		0
+Num_Checkpoints		10
+Use_Logtime		1
+
+//Grid Dimensions//
+Num_X			512
+Num_Y		        512
+Num_Z			1
+Lx      		2e-2 //2.5e-2
+Ly			2e-2 //2.5e-2
+Lz  		        1.0 //2.5e-2
+
+//Numerical Parameters//
+CFL			0.35
+PLM			1.0
+Density_Floor		0.0
+Pressure_Floor		1e-8
+
+//Mesh Motion Parameters//
+W0                      0.0
+W_frac                  1e-2
+Mesh_motion_x0		1e-2 //5e-3
+Mesh_motion_y0		1e-2 //5e-3
+Mesh_motion_z0		0.0
+
+
+//Hydro Parameters//
+Adiabatic_Index		1.66666666666666666667
+
+//Gravity Parameters//
+Gravity_Switch		0		//0=None, 1=Force, 2=Potential
+Central_Mass		0.1
+Grav_G                  1.0
+
+//Accretion Parameters//
+Bondi_Mdot		0.0
+Bondi_P_coeff		1e-6
+
+//Nozzle Parameters
+Nozzle_Switch		0
+Nozzle_x0		1e-2 //5e-3
+Nozzle_y0		1e-2 //5e-3
+Nozzle_z0		0.0
