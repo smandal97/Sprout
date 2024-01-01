@@ -1,0 +1,89 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="2.0">
+ <Domain>
+   <Grid Name="mesh" GridType="Uniform">
+     <Topology TopologyType="3DCoRectMesh" NumberOfElements="513 513 513"/>
+     <Geometry GeometryType="Origin_DxDyDz">
+       <DataItem Name="Origin" Dimensions="3" NumberType="Float" Precision="4" Format="XML">
+        0.000000e+00 0.000000e+00 0.000000e+00
+       </DataItem>
+       <DataItem Name="Spacing" Dimensions="3" NumberType="Float" Precision="4" Format="XML">
+        1.000000e+00 1.000000e+00 1.000000e+00
+       </DataItem>
+     </Geometry>
+     <Attribute Name="rho" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           0 0 0 0
+           1 1 1 1
+           1 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>
+     <Attribute Name="p" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           1 0 0 0
+           1 1 1 1
+           2 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vx" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           2 0 0 0
+           1 1 1 1
+           3 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vy" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           3 0 0 0
+           1 1 1 1
+           4 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vz" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           4 0 0 0
+           1 1 1 1
+           5 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>
+     <Attribute Name="tr" Center="Cell">
+       <DataItem ItemType="HyperSlab" Dimensions="512 512 512" Type="HyperSlab">
+         <DataItem Dimensions="3 4" Format="XML">
+           5 0 0 0
+           1 1 1 1
+           6 512 512 512
+         </DataItem>
+         <DataItem Dimensions="6 512 512 512" Format="HDF">
+           check.h5:/Data/Cells
+         </DataItem>
+       </DataItem>
+     </Attribute>   
+   </Grid>
+ </Domain>
+</Xdmf>
