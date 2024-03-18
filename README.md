@@ -1,2 +1,2 @@
-3D Cartesian hydro code with moving mesh and restarting capabilities. Author: Soham Mandal
+3D hydro code with an expanding Cartesian mesh. Author: Soham Mandal
 
