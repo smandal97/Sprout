@@ -1,0 +1,19 @@
+
+
+//Map Dimensions//
+Num_r			500
+Num_theta		800
+Num_phi			800
+Theta_min		0.0
+Theta_max		3.14159265359 //1.57079632679  //3.14159265359
+Phi_min			0.0
+Phi_max			6.28318530718 //1.57079632679  //6.28318530718
+
+//Center Location//
+x0			5e-5
+y0			5e-5
+z0			5e-5
+
+//Additional parameters//
+eta_min			0.12
+eta_max			0.55
