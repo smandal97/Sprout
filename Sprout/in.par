@@ -1,0 +1,53 @@
+
+//Sprout Parameter File//
+
+//Restart Parameter//
+Restart			0	//Restart from input.h5
+
+//Time Range//
+T_Start		1e-4
+T_End			1e-3
+
+//Output Frequency//
+Num_Reports		1e5
+Num_Snapshots		0
+Num_Checkpoints		10
+Use_Logtime		1
+
+//Grid Dimensions//
+Num_X			64
+Num_Y		     64
+Num_Z			64
+Lx      		8e-5
+Ly			8e-5
+Lz  		        8e-5
+
+//Numerical Parameters//
+CFL			0.35
+PLM			1.0
+Density_Floor		0.0
+Pressure_Floor		1e-10			//(times the zone density)
+
+//Mesh Motion Parameters//
+W0                      0.0
+eta_on                  1.1			//mesh motion starts at T_start*eta_on
+Mesh_motion_x0		0.5			//(times Lx)
+Mesh_motion_y0		0.5			//(times Ly)
+Mesh_motion_z0		0.5			//(times Lz)
+
+
+//Hydro Parameters//
+Adiabatic_Index		1.66666666666666666667  //1.33333333333333333333
+
+//Gravity Parameters//
+Gravity_Switch		0		//0=None, 1=Force, 2=Potential
+Central_Mass		0.1
+Grav_G                  1.0
+
+//Nozzle Parameters
+Nozzle_Switch		1
+Nozzle_Power		1.0
+Nozzle_Speed		1e1
+Nozzle_x0		0.5			//(times Lx)
+Nozzle_y0		0.5			//(times Ly)
+Nozzle_z0		0.5			//(times Lz)
