@@ -15,12 +15,17 @@ void initial( double * prim , double * xi , double t ){
    prim[UU1] = 0.0;
    prim[UU2] = 0.0;
    prim[UU3] = 0.0;
+   prim[BB1] = 0.75;
    if( x<x0 ){
       prim[RHO] = 1.0;
       prim[PPP] = 1.0;
+      prim[BB2] = 1.0;
+      prim[BB3] = 0.;
    }else if( x>=x0 ){
       prim[RHO] = 0.125;
       prim[PPP] = 0.1;
+      prim[BB2] = -1.0;
+      prim[BB3] = 0.;
    }
 
 }

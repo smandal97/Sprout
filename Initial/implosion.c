@@ -47,11 +47,11 @@ void initial( double * prim , double * xi , double t ){
    double k   = 77.;
    double ptb = amp*sin(k*phi)*sin(k*th);
    
-   if(r<=R1*(1.+ptb)){
+   if(r*ptb<=R1){
       rho = rho_0;
       P   = 0.1;
       ps  = 0.;
-   }else if(r>R1*(1.+ptb) && r<=R2){
+   }else if(r>R1 && r<=R2){
       rho = rho_0*20.; 
       P   = 0.1;
       ps  = 10.;
@@ -61,9 +61,9 @@ void initial( double * prim , double * xi , double t ){
       ps  = 5.;
       if(t<0.5) P = 10.;
       else if(t>=0.5 && t<=3.) P = 11.98 - 3.96*t;
-      //vx = -x/(R2/0.24-t);
-      //vy = -y/(R2/0.24-t);
-      //vz = -z/(R2/0.24-t);
+      vx = -x*0.24/(R2-0.24*t);
+      vy = -y*0.24/(R2-0.24*t);
+      vz = -z*0.24/(R2-0.24*t);
    }
 
    prim[RHO] = rho;

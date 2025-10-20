@@ -53,7 +53,7 @@ int main( int argc , char * argv[] ){
    boundary( &theDomain );
    
    double dtf;
-   
+   ///*
    while( !(theDomain.final_step) ){
 
       double dt = getmindt( &theDomain );
@@ -64,7 +64,7 @@ int main( int argc , char * argv[] ){
    }
    /*
    int g;
-   for( g=0 ; g<0 ; ++g ){
+   for( g=0 ; g<100 ; ++g ){
       double dt = getmindt( &theDomain );
       check_dt( &theDomain , &dt );
       timestep( &theDomain , dt );

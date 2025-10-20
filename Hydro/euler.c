@@ -38,7 +38,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    cons[TAU] = (.5*rho*v2 + rhoe + rho*phi)*dV;
    
    int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q )
+   for( q=NUM_C ; q<NUM_C+NUM_N ; ++q )
       cons[q] = cons[DEN]*prim[q];
 
 }
@@ -72,7 +72,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    prim[UU3] = vz;
 
    int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q )
+   for( q=NUM_C ; q<NUM_C+NUM_N ; ++q )
       prim[q] = cons[q]/cons[DEN];
 
 }
@@ -103,7 +103,7 @@ void getUstar( double * prim , double * UStar , double * x , double Sk , double 
    UStar[TAU] = .5*rhostar*v2 + Us + rhostar*Ss*(Ss - vn) + rhostar*phi + Pstar;
 
    int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q )
+   for( q=NUM_C ; q<NUM_C+NUM_N ; ++q )
       UStar[q] = prim[q]*UStar[DEN];
    
 }

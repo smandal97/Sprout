@@ -26,10 +26,11 @@ void boundary1D_neumann_zero( struct domain * theDomain , int theDIM ){
    double dl;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
-   int i,j,k,i_end,j_end,k_end,ijk_send,ijk_recv;
+   int mdim,i,j,k,i_end,j_end,k_end,ijk_send,ijk_recv;
 
    int n[3]   = {0};
    n[theDIM]  = 1;
+   double dA  = dy*dz*n[0] + dz*dx*n[1] + dx*dy*n[2];
    int cn[3]; cn[0] = 1; cn[1] = 1; cn[2] = 1;
    cn[theDIM] = 0;
 
@@ -51,6 +52,9 @@ void boundary1D_neumann_zero( struct domain * theDomain , int theDIM ){
                struct cell * crecv = theCells+ijk_recv;
                dl = (double)(n[0]*(i-Ng))*dx + (double)(n[1]*(j-Ng))*dy + (double)(n[2]*(k-Ng))*dz;
                mimic_cells( crecv , csend , dl , theDIM );
+               //MHD; set B-fluxes
+               for( mdim=0 ; mdim<NUM_M ; ++mdim )
+                  crecv->Phi_B[mdim] = crecv->prim[BB1+mdim]*dA;
             }
          }
       }
@@ -74,6 +78,9 @@ void boundary1D_neumann_zero( struct domain * theDomain , int theDIM ){
                struct cell * csend = theCells+ijk_send;
                dl = (double)(n[0]*(i-Nx-Ng+1))*dx + (double)(n[1]*(j-Ny-Ng+1))*dy + (double)(n[2]*(k-Nz-Ng+1))*dz;
                mimic_cells( crecv , csend , dl , theDIM );
+               //MHD; set B-fluxes
+               for( mdim=0 ; mdim<NUM_M ; ++mdim )
+                  crecv->Phi_B[mdim] = crecv->prim[BB1+mdim]*dA;
             }
          }
       }

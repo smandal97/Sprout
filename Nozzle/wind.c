@@ -66,7 +66,7 @@ void nozz_src( double * prim , double * cons , double * x , double dx , double d
       SE  = L*f;
       SS  = SE/vw/K;
       SM  = SS/vw;
-      cons[XXX] += dt * dV * SM * 1e2;
+      cons[XXX] += dt * dV * 1e8;
       cons[DEN] += dt * dV * SM;
       cons[TAU] += dt * dV * SE;
       if( rl!=0. ){

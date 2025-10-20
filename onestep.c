@@ -36,11 +36,12 @@ void adjust_rk_cons( struct domain * theDomain , double RK ){
 }
 
 void space_recon1D( struct domain * , int );
-void riemann1D( struct cell * , struct cell * , double , double , double , double , double , int , int , int , int );
+void riemann1D( struct cell * , struct cell * , double , double , double , double , double , int , int , int , int , int );
 
 void flux1D( struct domain * theDomain , int theDIM , double dt , int first_step , int last_step ){
 
    struct cell * theCells = theDomain->theCells;
+   int CT = theDomain->theParList.CT;
    int Nx = theDomain->Nx;
    int Ny = theDomain->Ny;
    int Nz = theDomain->Nz;
@@ -88,8 +89,8 @@ void flux1D( struct domain * theDomain , int theDIM , double dt , int first_step
                ijk_R += (Nx+2*Ng)*(Ny+2*Ng)*(k+n[2]);
             }
             struct cell * cL = theCells+ijk_L;
-            struct cell * cR = theCells+ijk_R;
-            riemann1D( cL , cR , dx , dy , dz , dt , W , no_of_dims , theDIM , first_step , last_step );
+            struct cell * cR = theCells+ijk_R; //printf("i,j,k = %i,%i,%i\n", i,j,k);
+            riemann1D( cL , cR , dx , dy , dz , dt , W , no_of_dims , theDIM , first_step , last_step , CT );
          }
       }   
    }
@@ -107,8 +108,6 @@ void add_flux( struct domain * theDomain , double dt , int first_step , int last
 void source( double * , double * , double * , double );
 void grav_src( double * , double * , double * , double , double );
 void nozz_src( double * , double * , double * , double , double , double , double , double );
-//additiional source functions, e.g., for modifying passive scalar to calculate ionization age
-void scalar_src( double * , double * , double * , double , double , double );
 
 double get_source_coefficient( int no_of_dims , int first_step , int last_step , double W , double dt ){
 
@@ -176,13 +175,23 @@ void add_source( struct domain * theDomain , double dt , int first_step , int la
             source( c->prim , c->cons , c->xi , dx*dy*dz*dt*C_S );
             if( grav_switch ) grav_src( c->prim , c->cons , c->xi , dx*dy*dz*dt*C_S , t );
             if( nozz_switch ) nozz_src( c->prim , c->cons , c->xi , dx, dy, dz, dt*C_S , t );
-            scalar_src( c->prim , c->cons , c->xi , dx*dy*dz*C_S , dt , t );
             
          }
       }
    }
 
 }
+
+
+
+//MHD functions
+void B_cells_to_faces( struct domain * , double , int , int );
+void get_cell_Efields( struct domain * );
+void get_edge_Efields( struct domain * );
+void update__B_fluxes( struct domain * , double , int , int );
+void B_faces_to_cells( struct domain * , double , int , int );
+
+
 
 void set_W( struct domain * , int );
 void calc_dxs( struct domain * , double );
@@ -217,9 +226,39 @@ void calc_prim( struct domain * theDomain ){
             if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
             struct cell * c = theCells+ijk;
             cons2prim( c->cons , c->prim , c->xi , dx*dy*dz );
-            //printf("x = %e, check = %e\n", c->xi[0], -c->cons[TAU]/0.01 + 0.5/1.000660897*pow( (c->xi[0]-.5)/1.000660897,2. ) + 1.5 *( c->prim[PPP] ) );
          }
       }
+   }
+
+}
+
+
+void diagnose_B( struct domain * theDomain ){
+
+   struct cell * theCells = theDomain->theCells;
+   int Nx = theDomain->Nx;
+   int Ny = theDomain->Ny;
+   int Nz = theDomain->Nz;
+   int Ng = theDomain->Ng;
+
+   int i_index = Nx+2*Ng;
+   int j_index = Ny+2*Ng;
+   int k_index = Nz+2*Ng;
+   if( theDomain->theParList.Num_x == 1 ) i_index = 1;
+   if( theDomain->theParList.Num_y == 1 ) j_index = 1;
+   if( theDomain->theParList.Num_z == 1 ) k_index = 1;
+   
+   int i,j,k,ijk,q;
+   for( k=0 ; k<k_index ; ++k ){
+      for( j=0 ; j<j_index ; ++j ){
+         for( i=0 ; i<i_index ; ++i ){
+            ijk  = i;
+            if( theDomain->theParList.Num_y != 1 ) ijk += (Nx+2*Ng)*j;
+            if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
+            struct cell * c = theCells+ijk;
+            c->prim[XXX] = c->E_edge[2];
+         }
+      }   
    }
 
 }
@@ -230,23 +269,25 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    
    adjust_rk_cons( theDomain , RK );
    
+
    add_flux( theDomain , dt , first_step , last_step );
    add_source( theDomain , dt , first_step , last_step );
+
+
+   if( NUM_M!=0 && theDomain->theParList.CT ){
+      //B_cells_to_faces( theDomain , dt , first_step , last_step );
+      get_cell_Efields( theDomain );
+      get_edge_Efields( theDomain );
+      //diagnose_B( theDomain );
+      update__B_fluxes( theDomain , dt , first_step , last_step );
+      B_faces_to_cells( theDomain , dt , first_step , last_step );
+   }
+   
 
    if( first_step ) calc_dxs( theDomain , dt );
    calc_prim( theDomain );
 
    if( first_step ) regrid( theDomain , dt );
-}
+   diagnose_B( theDomain );
 
-
-
-//additional function definitions in onestep.c
-void scalar_src( double * prim , double * cons , double * xi , double dV_corr, double dt , double t ){
-   //calculate ionization age of element
-   double thres = 1e-3;    //temperature threshold for element to be shocked (problem specific)
-   if(prim[PPP]/prim[RHO]>thres){ 
-      double n   = prim[RHO]/prim[XX5];    // number density = mass density/mean atomic weight
-      prim[XX6] += n*dt;                   // ionization age +=n*dt
-   }
 }

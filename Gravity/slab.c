@@ -17,8 +17,8 @@ void grav_src( double * prim , double * cons , double * x , double dVdt , double
 
    if( G_mode==1 ){
       double g_acc[3];
-      g_acc[0] = -G * M * 1.;
-      g_acc[1] = -G * M * 0.;
+      g_acc[0] = -G * M * 0.;
+      g_acc[1] = -G * M * 1.;
       g_acc[2] =  G * M * 0.;
       double rho = prim[RHO]; 
       cons[TAU] += dVdt * rho * ( g_acc[0]*prim[UU1] + g_acc[1]*prim[UU2] + g_acc[2]*prim[UU3] );

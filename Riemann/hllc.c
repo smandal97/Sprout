@@ -43,7 +43,7 @@ void get_flux_coefficients( int no_of_dims , int first_step , int last_step , do
    
 }
 
-void riemann1D( struct cell * cL , struct cell * cR , double dx , double dy , double dz , double dt , double W , int no_of_dims , int theDIM , int first_step , int last_step ){
+void riemann1D( struct cell * cL , struct cell * cR , double dx , double dy , double dz , double dt , double W , int no_of_dims , int theDIM , int first_step , int last_step , int CT ){
    
    double primL[NUM_Q];
    double primR[NUM_Q];
@@ -57,8 +57,8 @@ void riemann1D( struct cell * cL , struct cell * cR , double dx , double dy , do
 
    int q;
    for( q=0 ; q<NUM_Q ; ++q ){
-      primL[q] = cL->prim[q] + .5 * (cL->gradx[q]*dx*n[0] + cL->grady[q]*dy*n[1] + cL->gradz[q]*dz*n[2]) + (cL->pblax[q]*n[0] + cL->pblay[q]*n[1] + cL->pblaz[q]*n[2]);
-      primR[q] = cR->prim[q] - .5 * (cR->gradx[q]*dx*n[0] + cR->grady[q]*dy*n[1] + cR->gradz[q]*dz*n[2]) + (cL->pblax[q]*n[0] + cL->pblay[q]*n[1] + cL->pblaz[q]*n[2]);
+      primL[q] = cL->prim[q] + .5 * (cL->gradx[q]*dx*n[0] + cL->grady[q]*dy*n[1] + cL->gradz[q]*dz*n[2]);
+      primR[q] = cR->prim[q] - .5 * (cR->gradx[q]*dx*n[0] + cR->grady[q]*dy*n[1] + cR->gradz[q]*dz*n[2]);
    }
 
 
@@ -115,4 +115,12 @@ void riemann1D( struct cell * cL , struct cell * cR , double dx , double dy , do
       cR->cons[q] += Flux[q]*dt*dA;
    }
 
+   if( NUM_M!=0 && CT==1 ){
+      int DIM_p1 = (theDIM+1)%3;
+      int DIM_p2 = (theDIM+2)%3;
+      cR->Phi_R[theDIM*(NUM_M-1)+0] = Flux[DIM_p1+NUM_C+NUM_N];
+      cR->Phi_R[theDIM*(NUM_M-1)+1] = Flux[DIM_p2+NUM_C+NUM_N];
+      
+      cR->CMode[theDIM] = Flux[0];
+   }
 }

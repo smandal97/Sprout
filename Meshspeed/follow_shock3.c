@@ -1,13 +1,8 @@
 
 #include "../defs.h"
-
+//based on time to crash rather than distance from center
 static int D = 0;
-static double x_cen = 0.0;
-static double y_cen = 0.0;
-static double z_cen = 0.0;
-static double t_min  = 0.0;
-static double eta_on = 0.0;
-static double shock_pos = 0.0;
+static double x_cen , y_cen , z_cen , t_min  , eta_on , eps , shock_pos;
 
 
 
@@ -21,22 +16,35 @@ void setMeshMotionParams( struct domain * theDomain ){
    if( theDomain->theParList.Num_z!=1 ) D += 1;
    t_min  = theDomain->t_init;
    eta_on = theDomain->theParList.eta_on; 
-   shock_pos = 0.4;
+   shock_pos = 0.75;
+   eps = 0.8;
     
 }
 
-
-double f_select( double L , double L0 , double x ){
-   //double chi = (x-L0)/(L-L0);
-   if( x>L0+shock_pos*L/2. || x<L0-shock_pos*L/2. ){ 
-      //printf("chi1 = %e\n",chi);
-      return 1.0; 
-   }
-   else{ 
-      //printf("chi0 = %e, x = %e, L0 = %e, L = %e\n",chi,x,L0,L); 
-      return 0.;
-   }
+double marker( struct cell * c , int dim ){
+   //return ( c->prim[UU1+dim]*c->prim[RHO] );
+   //return ( c->prim[UU1+dim]*c->prim[PPP]*(c->xi[dim]-x0) );
+   //return ( c->prim[UU1+dim] );
+   return ( (1.-c->prim[XXX])*c->prim[RHO] );
 }
+
+double time_to_crash( struct cell * c , int dim , double xll , double xrr ){
+   double v = c->prim[UU1+dim];
+   double x = c->xi[dim];
+   double tau;
+   if(v>0.) tau = (xrr-x)/v;
+   else if(v<0.) tau = (xll-x)/v;
+   else tau = 1e10;
+   return tau;
+}
+
+double clip_expansion_factor( double delx , double xL , double xC , double xR ){
+   double delr = fabs(xC - xL);
+   if(delr>fabs(xR-xC)) delr = fabs(xR-xC);
+   if(delx/delr<shock_pos) return 0.;
+   else return 1.;
+}
+
 
 
 void set_W( struct domain * theDomain , int reset ){
@@ -46,10 +54,10 @@ void set_W( struct domain * theDomain , int reset ){
    if( t<t_min*eta_on ){
       theDomain->W = 0.;
    }else{
-      int i,j,k,ijk,dim,fastdim;
-      double r_fast;
-      double v_fast = 0.;
-      double pv_fast = 0.;
+      int i,j,k,i_t,j_t,k_t,ijk,dim,fastdim;
+      double mrk,tau,v_champ,r_champ;
+      double mrk_max = 0.;
+      double tau_min = 1e20;
 
       int Nx = theDomain->Nx;
       int Ny = theDomain->Ny;
@@ -63,13 +71,17 @@ void set_W( struct domain * theDomain , int reset ){
       int Num_z = theDomain->theParList.Num_z;
       
 
-      double Ls[3],Cs[3];
-      Ls[0] = (double)Num_x * dx;
-      Ls[1] = (double)Num_y * dy;
-      Ls[2] = (double)Num_z * dz;
-      Cs[0] = x_cen;
-      Cs[1] = y_cen;
-      Cs[2] = z_cen;
+      double xL[3],xR[3],xC[3];
+      xC[0] = x_cen;
+      xC[1] = y_cen;
+      xC[2] = z_cen;
+      xL[0] = xC[0] * (1. - (double)Num_x*dx/theDomain->theParList.Lx);
+      xL[1] = xC[1] * (1. - (double)Num_y*dy/theDomain->theParList.Ly);
+      xL[2] = xC[2] * (1. - (double)Num_z*dz/theDomain->theParList.Lz);
+      xR[0] = xC[0] + (double)Num_x*dx * (1.-xC[0]/theDomain->theParList.Lx);
+      xR[1] = xC[1] + (double)Num_y*dy * (1.-xC[1]/theDomain->theParList.Ly);
+      xR[2] = xC[2] + (double)Num_z*dz * (1.-xC[2]/theDomain->theParList.Lz);
+
  
       int i0=0 ; int j0=0 ; int k0=0; 
       int i1=1 ; int j1=1 ; int k1=1;
@@ -96,24 +108,58 @@ void set_W( struct domain * theDomain , int reset ){
                if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
                struct cell * c = theDomain->theCells+ijk;
                for( dim=0 ; dim<D ; ++dim ){
-                  if( pv_fast<fabs(c->prim[UU1+dim]*c->prim[PPP]) ){
-                     pv_fast  = fabs(c->prim[UU1+dim]*c->prim[PPP]);
-                     v_fast   = c->prim[UU1+dim];
-                     r_fast   = c->xi[dim];
-                     fastdim  = dim;
-                  }
+                  mrk = marker( c, dim );
+                  if( mrk_max<mrk ) mrk_max  = mrk;
                }
                
             }
          }
       }
 
+      MPI_Allreduce( MPI_IN_PLACE , &mrk_max , 1 , MPI_DOUBLE , MPI_MAX , theDomain->theComm );
+
+      //if(theDomain->rank==0 && fabs(t/1.6e-4-1.)<.2) 
+         //printf("CHECK0: marker=%.4e\n",mrk_max);    
+ 
+      
+      for( k=k0 ; k<k1 ; ++k ){
+         for( j=j0 ; j<j1 ; ++j ){
+            for( i=i0 ; i<i1 ; ++i ){
+               ijk  = i;
+               if( theDomain->theParList.Num_y != 1 ) ijk += (Nx+2*Ng)*j;
+               if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
+               struct cell * c = theDomain->theCells+ijk;
+               for( dim=0 ; dim<1 ; ++dim ){
+                  tau = time_to_crash( c , dim , xL[dim] , xR[dim] );
+                  mrk = marker( c, dim );
+                  if( mrk>eps*mrk_max && tau<tau_min ){
+                     tau_min = tau;
+                     v_champ = c->prim[UU1+dim];
+                     r_champ = c->xi[dim]-xC[dim];
+                     fastdim = dim;
+                     k_t = k;
+                     j_t = j;
+                     i_t = i;
+                  }   
+               }
+            }
+         }
+      }
+
+            
+      struct { double value; int index; } maxval;
+      maxval.value = v_champ;
+      maxval.index = theDomain->rank;
+      MPI_Allreduce( MPI_IN_PLACE , &maxval , 1 , MPI_DOUBLE_INT , MPI_MAXLOC , theDomain->theComm );
+      MPI_Bcast( &r_champ , 1 , MPI_DOUBLE , maxval.index , theDomain->theComm );
+
+      if(theDomain->rank==0 && fabs(t/1.3e-4-1.)<.2)
+         printf("CHECK1: v_fast = %e, r_fast=%e, fastdim=%i, ijk = [%i %i %i]\n ", maxval.value, r_champ, fastdim, i_t, j_t, k_t);
+      
+
+      //maxval.value *= clip_expansion_factor(r_champ,xL[fastdim],xC[fastdim],xR[fastdim]);
       double W_local = 0.;
-      //printf("OLD: rfast = %e, vfast_old = %e, W_local = %e\n",r_fast, v_fast, W_local);
-      v_fast *= f_select( Ls[fastdim] , Cs[fastdim] , r_fast );
-      //printf("MID: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
-      W_local = fabs( v_fast/(r_fast - Cs[fastdim]) );
-      //printf("NEW: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
+      if(r_champ!=0.) W_local = maxval.value/r_champ;
       MPI_Allreduce( MPI_IN_PLACE , &W_local , 1 , MPI_DOUBLE , MPI_MAX , theDomain->theComm );
       theDomain->W = W_local;
    }
