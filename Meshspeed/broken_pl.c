@@ -24,7 +24,7 @@ void set_W( struct domain * theDomain , int reset ){
    
    double t = theDomain->t;
    if( t>t_min*eta_on && t<t_min*1e3 )
-      theDomain->W = 1.8/t;
+      theDomain->W = 1.2/t;
    else if( t>t_min*1e3 && t<t_min*1e4 )
       theDomain->W = 1.18/t;
    else

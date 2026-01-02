@@ -23,10 +23,11 @@ void boundary1D_dirichlet( struct domain * theDomain , int theDIM ){
    double dl;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
-   int i,j,k,i_end,j_end,k_end,ijk_send,ijk_recv;
+   int mdim,i,j,k,i_end,j_end,k_end,ijk_send,ijk_recv;
 
    int n[3]   = {0};
    n[theDIM]  = 1;
+   double dA  = dy*dz*n[0] + dz*dx*n[1] + dx*dy*n[2];
    int cn[3]; cn[0] = 1; cn[1] = 1; cn[2] = 1;
    cn[theDIM] = 0;
 
@@ -50,6 +51,9 @@ void boundary1D_dirichlet( struct domain * theDomain , int theDIM ){
                set_coords( crecv , csend , dl , theDIM ); 
                initial( crecv->prim , crecv->xi , t );
                prim2cons( crecv->prim , crecv->cons , crecv->xi , dx*dy*dz );
+               //MHD; set B-fluxes
+               for( mdim=0 ; mdim<NUM_M ; ++mdim )
+                  crecv->Phi_B[mdim] = crecv->prim[BB1+mdim]*dA;
             }
          }
       }
@@ -75,6 +79,9 @@ void boundary1D_dirichlet( struct domain * theDomain , int theDIM ){
                set_coords( crecv , csend , dl , theDIM );
                initial( crecv->prim , crecv->xi , t );
                prim2cons( crecv->prim , crecv->cons , crecv->xi , dx*dy*dz );
+               //MHD; set B-fluxes
+               for( mdim=0 ; mdim<NUM_M ; ++mdim )
+                  crecv->Phi_B[mdim] = crecv->prim[BB1+mdim]*dA;
             }
          }
       }

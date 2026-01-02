@@ -11,21 +11,26 @@ struct cell_lite{
    double RKcons[NUM_Q];
    double xi[3];
    double RKxi[3];
+   double Phi_B[NUM_M];
+   double Phi_R[NUM_M*(NUM_M-1)];
 };
 
 void generate_mpi_cell( MPI_Datatype * cell_mpi ){
 
    struct cell_lite test;
-   int count = 5;
-   int blocksize[]      = {NUM_Q,NUM_Q,NUM_Q,3,3};
-   MPI_Datatype types[] = {MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE};
-   MPI_Aint offsets[5];
+   int count = 7;
+   int blocksize[]      = {NUM_Q,NUM_Q,NUM_Q,3,3,NUM_M,NUM_M*(NUM_M-1)};
+   //int blocksize[]      = {NUM_Q,NUM_Q,NUM_Q,3,3};
+   MPI_Datatype types[] = {MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE};
+   MPI_Aint offsets[7];
 
    offsets[0] = (char *)&(test.prim)   - (char *)(&test);
    offsets[1] = (char *)&(test.cons)   - (char *)(&test);
    offsets[2] = (char *)&(test.RKcons) - (char *)(&test);
    offsets[3] = (char *)&(test.xi)     - (char *)(&test);
    offsets[4] = (char *)&(test.RKxi)   - (char *)(&test);
+   offsets[5] = (char *)&(test.Phi_B)  - (char *)(&test);
+   offsets[6] = (char *)&(test.Phi_R)  - (char *)(&test);
 
    MPI_Type_create_struct( count , blocksize , offsets , types , cell_mpi );
    MPI_Type_commit( cell_mpi );
@@ -34,21 +39,25 @@ void generate_mpi_cell( MPI_Datatype * cell_mpi ){
 
 void copy_cell_to_lite( struct cell * c , struct cell_lite * cl ){
   
-   memcpy( cl->prim   , c->prim   , NUM_Q*sizeof(double) ); 
-   memcpy( cl->cons   , c->cons   , NUM_Q*sizeof(double) ); 
-   memcpy( cl->RKcons , c->RKcons , NUM_Q*sizeof(double) );
-   memcpy( cl->xi     , c->xi     ,     3*sizeof(double) ); 
-   memcpy( cl->RKxi   , c->RKxi   ,     3*sizeof(double) );
+   memcpy( cl->prim   , c->prim   ,           NUM_Q*sizeof(double) ); 
+   memcpy( cl->cons   , c->cons   ,           NUM_Q*sizeof(double) ); 
+   memcpy( cl->RKcons , c->RKcons ,           NUM_Q*sizeof(double) );
+   memcpy( cl->xi     , c->xi     ,               3*sizeof(double) ); 
+   memcpy( cl->RKxi   , c->RKxi   ,               3*sizeof(double) );
+   memcpy( cl->Phi_B  , c->Phi_B  ,           NUM_M*sizeof(double) );
+   memcpy( cl->Phi_R  , c->Phi_R  , NUM_M*(NUM_M-1)*sizeof(double) );
 
 }
 
 void copy_lite_to_cell( struct cell_lite * cl , struct cell * c ){
 
-   memcpy( c->prim   , cl->prim   , NUM_Q*sizeof(double) ); 
-   memcpy( c->cons   , cl->cons   , NUM_Q*sizeof(double) ); 
-   memcpy( c->RKcons , cl->RKcons , NUM_Q*sizeof(double) );
-   memcpy( c->xi     , cl->xi     ,     3*sizeof(double) ); 
-   memcpy( c->RKxi   , cl->RKxi   ,     3*sizeof(double) );
+   memcpy( c->prim   , cl->prim   ,           NUM_Q*sizeof(double) ); 
+   memcpy( c->cons   , cl->cons   ,           NUM_Q*sizeof(double) ); 
+   memcpy( c->RKcons , cl->RKcons ,           NUM_Q*sizeof(double) );
+   memcpy( c->xi     , cl->xi     ,               3*sizeof(double) ); 
+   memcpy( c->RKxi   , cl->RKxi   ,               3*sizeof(double) );
+   memcpy( c->Phi_B  , cl->Phi_B  ,           NUM_M*sizeof(double) );
+   memcpy( c->Phi_R  , cl->Phi_R  , NUM_M*(NUM_M-1)*sizeof(double) );
 
 }
 

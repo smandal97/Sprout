@@ -162,7 +162,7 @@ void boundary( struct domain * theDomain ){
    int Nztot = theDomain->theParList.Num_z;
 
    if( Nxtot > 1 )boundary1D_periodic( theDomain , 0 );
-   if( Nytot > 1 )boundary1D_dirichlet( theDomain , 1 );
+   if( Nytot > 1 )boundary1D_periodic( theDomain , 1 );
    if( Nztot > 1 )boundary1D_periodic( theDomain , 2 );
 
 }

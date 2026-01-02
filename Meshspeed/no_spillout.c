@@ -1,43 +1,42 @@
 
 #include "../defs.h"
 
-static int D = 0;
-static double x_cen = 0.0;
-static double y_cen = 0.0;
-static double z_cen = 0.0;
+static double x_cen  = 0.0;
+static double y_cen  = 0.0;
+static double z_cen  = 0.0;
 static double t_min  = 0.0;
 static double eta_on = 0.0;
-static double shock_pos = 0.0;
-
-
+static double shock_pos = 0.9;
 
 void setMeshMotionParams( struct domain * theDomain ){
 
    x_cen = theDomain->theParList.MM_x0 * theDomain->theParList.Lx;
    y_cen = theDomain->theParList.MM_y0 * theDomain->theParList.Ly;
    z_cen = theDomain->theParList.MM_z0 * theDomain->theParList.Lz;
-   if( theDomain->theParList.Num_x!=1 ) D += 1;
-   if( theDomain->theParList.Num_y!=1 ) D += 1;
-   if( theDomain->theParList.Num_z!=1 ) D += 1;
    t_min  = theDomain->t_init;
    eta_on = theDomain->theParList.eta_on; 
-   shock_pos = 0.4;
+   shock_pos = 0.80;
     
 }
 
-
-double f_select( double L , double L0 , double x ){
-   //double chi = (x-L0)/(L-L0);
-   if( x>L0+shock_pos*L/2. || x<L0-shock_pos*L/2. ){ 
-      //printf("chi1 = %e\n",chi);
-      return 1.0; 
-   }
-   else{ 
-      //printf("chi0 = %e, x = %e, L0 = %e, L = %e\n",chi,x,L0,L); 
-      return 0.;
-   }
+double time_to_boundary( double L , double L0 , double x , double v ){
+   x -= L0;
+   if( v>0. ) return ( fabs((L-x)/v) );
+   if( v<0. ) return ( fabs(-1.*x/v) );
+   if( v==0. ) return ( 1e10 );
 }
 
+double get_r_fast_zero( int dim ){
+   if( dim==0 ) return x_cen;
+   if( dim==1 ) return y_cen;
+   if( dim==2 ) return z_cen;
+}
+
+double get_L( double dx , double dy , double dz , int Nx , int Ny , int Nz , int dim ){
+   if( dim==0 ) return( (double)Nx * dx );
+   if( dim==1 ) return( (double)Ny * dy );
+   if( dim==2 ) return( (double)Nz * dz );
+}
 
 void set_W( struct domain * theDomain , int reset ){
 
@@ -46,45 +45,38 @@ void set_W( struct domain * theDomain , int reset ){
    if( t<t_min*eta_on ){
       theDomain->W = 0.;
    }else{
-      int i,j,k,ijk,dim,fastdim;
-      double r_fast;
-      double v_fast = 0.;
-      double pv_fast = 0.;
+      int i,j,k,ijk,dim;
+      double v_fast , r_fast , r_fast_0; 
+      double L,L0,t_local,t_min = 1e30; 
 
       int Nx = theDomain->Nx;
       int Ny = theDomain->Ny;
       int Nz = theDomain->Nz;
       int Ng = theDomain->Ng;
-      double dx = theDomain->dx;
-      double dy = theDomain->dy;
-      double dz = theDomain->dz;
       int Num_x = theDomain->theParList.Num_x;
       int Num_y = theDomain->theParList.Num_y;
       int Num_z = theDomain->theParList.Num_z;
-      
-
-      double Ls[3],Cs[3];
-      Ls[0] = (double)Num_x * dx;
-      Ls[1] = (double)Num_y * dy;
-      Ls[2] = (double)Num_z * dz;
-      Cs[0] = x_cen;
-      Cs[1] = y_cen;
-      Cs[2] = z_cen;
+      int xsize = theDomain->dim_size[0];
+      int ysize = theDomain->dim_size[1];
+      int zsize = theDomain->dim_size[2];
+      double dx = theDomain->dx;
+      double dy = theDomain->dy;
+      double dz = theDomain->dz;
  
       int i0=0 ; int j0=0 ; int k0=0; 
       int i1=1 ; int j1=1 ; int k1=1;
-
+      int maxdim  = 0;
       if( theDomain->theParList.Num_x != 1 ){
-         i0 = Ng; 
-         i1 = Nx+Ng;
+         i0 = Ng; i1 = Nx+Ng;
+         maxdim += 1;
       }
-      if( theDomain->theParList.Num_y != 1 ){
-         j0 = Ng; 
-         j1 = Ny+Ng;
+      if( theDomain->theParList.Num_y == 1 ){
+         j0 = Ng; j1 = Ny+Ng;
+         maxdim += 1;
       }
-      if( theDomain->theParList.Num_z != 1 ){
-         k0 = Ng; 
-         k1 = Nz+Ng;
+      if( theDomain->theParList.Num_z == 1 ){
+         k0 = Ng; k1 = Nz+Ng;
+         maxdim += 1;
       }
 
    
@@ -95,29 +87,39 @@ void set_W( struct domain * theDomain , int reset ){
                if( theDomain->theParList.Num_y != 1 ) ijk += (Nx+2*Ng)*j;
                if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
                struct cell * c = theDomain->theCells+ijk;
-               for( dim=0 ; dim<D ; ++dim ){
-                  if( pv_fast<fabs(c->prim[UU1+dim]*c->prim[PPP]) ){
-                     pv_fast  = fabs(c->prim[UU1+dim]*c->prim[PPP]);
+               for( dim=0 ; dim<maxdim ; ++dim  ){
+                  if( dim==0 ){
+                     L  = (double)Nx * (double)xsize * dx;
+                     L0 = x_cen;
+                  }
+                  if( dim==1 ){ 
+                     L  = (double)Ny * (double)ysize * dy;
+                     L0 = y_cen;
+                  }
+                  if( dim==2 ){
+                     L  = (double)Nz * (double)zsize * dz;
+                     L0 = z_cen;
+                  }
+                  t_local = time_to_boundary( L , L0 , c->xi[dim] , c->prim[UU1+dim] );
+                  if( t_local<t_min ){
+                     t_min    = t_local;
                      v_fast   = c->prim[UU1+dim];
                      r_fast   = c->xi[dim];
-                     fastdim  = dim;
-                  }
+                     r_fast_0 = get_r_fast_zero(dim);
+                     L        = get_L( dx,dy,dz,Num_x,Num_y,Num_z,dim );
+                  }   
                }
-               
             }
          }
       }
 
       double W_local = 0.;
-      //printf("OLD: rfast = %e, vfast_old = %e, W_local = %e\n",r_fast, v_fast, W_local);
-      v_fast *= f_select( Ls[fastdim] , Cs[fastdim] , r_fast );
-      //printf("MID: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
-      W_local = fabs( v_fast/(r_fast - Cs[fastdim]) );
-      //printf("NEW: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
+      //printf("Lshock = %e, rfast = %e, vfast = %e\n",L*shock_pos, r_fast, v_fast);
+      if( r_fast>= shock_pos*L )
+         W_local = fabs( v_fast/(shock_pos*L - r_fast_0) );
       MPI_Allreduce( MPI_IN_PLACE , &W_local , 1 , MPI_DOUBLE , MPI_MAX , theDomain->theComm );
       theDomain->W = W_local;
    }
-
 
 }
 

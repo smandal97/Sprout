@@ -7,7 +7,7 @@ static double z_speed = 0.0;
 
 void setMeshMotionParams( struct domain * theDomain ){
 
-   x_speed = theDomain->theParList.Lx*0.;
+   x_speed = theDomain->theParList.Lx*0.+1.;
    y_speed = theDomain->theParList.Ly*0.;
    z_speed = theDomain->theParList.Lz*0.;
     

@@ -27,17 +27,33 @@ void setMeshMotionParams( struct domain * theDomain ){
 
 
 double f_select( double L , double L0 , double x ){
-   //double chi = (x-L0)/(L-L0);
-   if( x>L0+shock_pos*L/2. || x<L0-shock_pos*L/2. ){ 
-      //printf("chi1 = %e\n",chi);
-      return 1.0; 
-   }
-   else{ 
-      //printf("chi0 = %e, x = %e, L0 = %e, L = %e\n",chi,x,L0,L); 
-      return 0.;
-   }
+   //return 2./(tanh(chi-chi_0)+1.+1e-1);
+   double chi = fabs(x-L0)/(L-L0);
+   if(chi>shock_pos) return 1.;
+   else return 0.;
 }
 
+
+
+double shock_eta( double L , double xc , double x , double v , double p ){
+   double x_left  = -xc;
+   double x_right = L-xc;
+   if( v>0. ) return ( fabs((x_right-x)/v/p) );
+   if( v<0. ) return ( fabs( (x-x_left)/v/p) );
+   if( v==0. ) return ( 1e10 );
+}
+
+double get_r_fast_zero( int dim ){
+   if( dim==0 ) return x_cen;
+   if( dim==1 ) return y_cen;
+   if( dim==2 ) return z_cen;
+}
+
+double get_L( double dx , double dy , double dz , int Nx , int Ny , int Nz , int dim ){
+   if( dim==0 ) return( (double)Nx * dx );
+   if( dim==1 ) return( (double)Ny * dy );
+   if( dim==2 ) return( (double)Nz * dz );
+}
 
 void set_W( struct domain * theDomain , int reset ){
 
@@ -47,9 +63,8 @@ void set_W( struct domain * theDomain , int reset ){
       theDomain->W = 0.;
    }else{
       int i,j,k,ijk,dim,fastdim;
-      double r_fast;
-      double v_fast = 0.;
-      double pv_fast = 0.;
+      double v_fast,r_fast; 
+      double t_local,t_min = 1e30; 
 
       int Nx = theDomain->Nx;
       int Ny = theDomain->Ny;
@@ -65,26 +80,29 @@ void set_W( struct domain * theDomain , int reset ){
 
       double Ls[3],Cs[3];
       Ls[0] = (double)Num_x * dx;
-      Ls[1] = (double)Num_y * dy;
-      Ls[2] = (double)Num_z * dz;
+      Ls[1] = (double)Num_y * dx;
+      Ls[2] = (double)Num_z * dx;
       Cs[0] = x_cen;
       Cs[1] = y_cen;
       Cs[2] = z_cen;
  
       int i0=0 ; int j0=0 ; int k0=0; 
       int i1=1 ; int j1=1 ; int k1=1;
-
+      int maxdim  = 0;
       if( theDomain->theParList.Num_x != 1 ){
          i0 = Ng; 
          i1 = Nx+Ng;
+         maxdim += 1;
       }
       if( theDomain->theParList.Num_y != 1 ){
          j0 = Ng; 
          j1 = Ny+Ng;
+         maxdim += 1;
       }
       if( theDomain->theParList.Num_z != 1 ){
          k0 = Ng; 
          k1 = Nz+Ng;
+         maxdim += 1;
       }
 
    
@@ -95,9 +113,10 @@ void set_W( struct domain * theDomain , int reset ){
                if( theDomain->theParList.Num_y != 1 ) ijk += (Nx+2*Ng)*j;
                if( theDomain->theParList.Num_z != 1 ) ijk += (Nx+2*Ng)*(Ny+2*Ng)*k;
                struct cell * c = theDomain->theCells+ijk;
-               for( dim=0 ; dim<D ; ++dim ){
-                  if( pv_fast<fabs(c->prim[UU1+dim]*c->prim[PPP]) ){
-                     pv_fast  = fabs(c->prim[UU1+dim]*c->prim[PPP]);
+               for( dim=0 ; dim<=maxdim ; ++dim ){
+                  t_local = shock_eta( Ls[dim] , Cs[dim] , c->xi[dim] , c->prim[UU1+dim] , c->prim[RHO]);
+                  if( t_local<t_min ){
+                     t_min    = t_local;
                      v_fast   = c->prim[UU1+dim];
                      r_fast   = c->xi[dim];
                      fastdim  = dim;
@@ -109,15 +128,14 @@ void set_W( struct domain * theDomain , int reset ){
       }
 
       double W_local = 0.;
-      //printf("OLD: rfast = %e, vfast_old = %e, W_local = %e\n",r_fast, v_fast, W_local);
+      printf("OLD: rfast = %e, vfast_old = %e, W_local = %e\n",r_fast, v_fast, W_local);
       v_fast *= f_select( Ls[fastdim] , Cs[fastdim] , r_fast );
-      //printf("MID: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
+      printf("MID: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
       W_local = fabs( v_fast/(r_fast - Cs[fastdim]) );
-      //printf("NEW: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
+      printf("NEW: rfast = %e, vfast = %e, W_local = %e\n",r_fast, v_fast, W_local);
       MPI_Allreduce( MPI_IN_PLACE , &W_local , 1 , MPI_DOUBLE , MPI_MAX , theDomain->theComm );
       theDomain->W = W_local;
    }
-
 
 }
 

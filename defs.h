@@ -1,4 +1,4 @@
-enum{RHO,PPP,UU1,UU2,UU3,XXX,XX2,XX3,XX4,XX5,XX6};
+enum{RHO,PPP,UU1,UU2,UU3,XXX,BB1,BB2,BB3};
 enum{DEN,TAU,SS1,SS2,SS3};
 
 
@@ -11,9 +11,13 @@ enum{DEN,TAU,SS1,SS2,SS3};
 
 
 #define NUM_C 5
-#define NUM_N 6
-#define NUM_Q (NUM_C+NUM_N)
+#define NUM_N 1
+#define NUM_M 3   //0 for hydro, 3 for MHD
+#define NUM_E NUM_M
+#define NUM_Q (NUM_C+NUM_N+NUM_M)
 #define NUM_G 2
+
+
 
 struct param_list{
    double t_min, t_max;
@@ -37,6 +41,7 @@ struct param_list{
    double Nozzle_pow, Nozzle_v;
 
    int restart_flag;
+   int CT;
 };
 
 struct cell{
@@ -46,12 +51,15 @@ struct cell{
    double gradx[NUM_Q];
    double grady[NUM_Q];
    double gradz[NUM_Q];
-   double pblax[NUM_Q];
-   double pblay[NUM_Q];
-   double pblaz[NUM_Q];
 
    double xi[3];
    double RKxi[3];
+
+   double Phi_R[NUM_M*(NUM_M-1)];
+   double Phi_B[NUM_M];
+   double E_edge[NUM_E];
+   double E_cntr[NUM_E];
+   int CMode[NUM_M];
 };
 
 struct domain{

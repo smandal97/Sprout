@@ -24,6 +24,7 @@ void set_W( struct domain * theDomain , int reset ){
       theDomain->W = 0.;
    else
       theDomain->W = theDomain->theParList.W0/theDomain->t;
+
 }
 
 double get_wn( double * xl , double dx , double dy , double dz , double W , int theDIM ){

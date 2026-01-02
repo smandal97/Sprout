@@ -29,11 +29,14 @@ void initial( double * prim , double * xi , double t ){
    double z   = 0.;
    if(d>2.) z = xi[2] - z_cen;
    double r   = sqrt( x*x + y*y +z*z );
-   prim[UU1] = 0.0;
+   prim[UU1] = 1.0;
    prim[UU2] = 0.0;
    prim[UU3] = 0.0;
    prim[RHO] = 1e0;
    prim[PPP] = 1e-5;
    prim[XXX] = 1e-6;
+   prim[BB1] = 0.0;
+   prim[BB2] = 1.0;
+   prim[BB3] = 2.0;
  
 }

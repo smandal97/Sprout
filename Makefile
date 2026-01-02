@@ -1,22 +1,22 @@
 
 RESTART   = h5in
-BOUNDARY  = cornermirror
-INITIAL   = read_1d
-HYDRO     = euler
-RIEMANN   = hllc
+BOUNDARY  = periodic#neumann_zero
+INITIAL   = B_advection#1D_shocktube
+HYDRO     = mhd
+RIEMANN   = hlld
 GRAVITY   = slab
 NOZZLE    = wind
 SPACE     = plm
-TIMESTEP  = rk2
-MESHSPEED = follow_shock
+TIMESTEP  = rk2#feuler
+MESHSPEED = zero
 OUTPUT    = h5out
 
 UNAME = $(shell uname)
 ifeq ($(UNAME),Linux)
-H55 = /apps/software/standard/mpi/aocc/4.2.0/openmpi/4.1.4/hdf5/1.14.3#/usr/lib/x86_64-linux-gnu/hdf5/serial
+H55 = /usr/lib/x86_64-linux-gnu/hdf5/serial
 endif
 ifeq ($(UNAME),Darwin)
-H55 = /opt/homebrew/opt/hdf5-mpi
+H55 = /opt/homebrew/opt/hdf5
 endif
 
 CC = mpicc
@@ -25,7 +25,7 @@ FLAGS = -O3 -Wall -g
 INC = -I$(H55)/include
 LIB = -L$(H55)/lib
 
-OBJ = main.o domain.o gridsetup.o mpisetup.o readpar.o exchange.o onestep.o report.o profiler.o snapshot.o $(RESTART).o $(BOUNDARY).o $(INITIAL).o $(HYDRO).o $(RIEMANN).o $(GRAVITY).o $(NOZZLE).o $(SPACE).o $(TIMESTEP).o $(OUTPUT).o $(MESHSPEED).o
+OBJ = main.o domain.o gridsetup.o mpisetup.o readpar.o exchange.o bfields.o onestep.o report.o profiler.o snapshot.o $(RESTART).o $(BOUNDARY).o $(INITIAL).o $(HYDRO).o $(RIEMANN).o $(GRAVITY).o $(NOZZLE).o $(SPACE).o $(TIMESTEP).o $(OUTPUT).o $(MESHSPEED).o
 
 default: cube
 

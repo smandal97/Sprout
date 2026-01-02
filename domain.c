@@ -43,7 +43,8 @@ void setupCells( struct domain * theDomain ){
    double dz = theDomain->dz;
    double t  = theDomain->t;
 
-   int i,j,k,q,ijk;
+
+   int i,j,k,q,ijk,ijk_0,ijk_m1;
    for( k=0 ; k<Nz ; ++k ){
       for( j=0 ; j<Ny ; ++j ){
          for( i=0 ; i<Nx ; ++i ){
@@ -59,13 +60,58 @@ void setupCells( struct domain * theDomain ){
                c->gradx[q] = 0.0;
                c->grady[q] = 0.0;
                c->gradz[q] = 0.0;
-               c->pblax[q] = 0.0;
-               c->pblay[q] = 0.0;
-               c->pblaz[q] = 0.0;
             }
          }
       }
    }
+
+   //MHD; set B-fluxes at face centers
+   
+   int i_index = Nx+2*Ng;
+   int j_index = Ny+2*Ng;
+   int k_index = Nz+2*Ng;
+   if( theDomain->theParList.Num_x == 1 ) i_index = 1;
+   if( theDomain->theParList.Num_y == 1 ) j_index = 1;
+   if( theDomain->theParList.Num_z == 1 ) k_index = 1;
+   int i_n;       //index and max_index in the direction of traversal
+   int n[3] = {0};
+   double dA;
+
+
+   for( q=0 ; q<NUM_M ; ++q ){
+
+      n[q] = 1;
+      double dA = dy*dz*n[0] + dz*dx*n[1] + dx*dy*n[2];
+       
+      for( k=0 ; k<k_index ; ++k ){
+         for( j=0 ; j<j_index ; ++j ){
+            for( i=0 ; i<i_index ; ++i ){
+               i_n = n[0]*i+n[1]*j+n[2]*k;
+
+               ijk_0 = i;
+               if( i_n==0 ) ijk_m1 = i;
+               else ijk_m1 = i-n[0];
+               if( theDomain->theParList.Num_y != 1 ){
+                  ijk_0 += (Nx+2*Ng)*j;
+                  if( i_n==0 ) ijk_m1 += (Nx+2*Ng)*j;
+                  else ijk_m1 += (Nx+2*Ng)*(j-n[1]);
+               }
+               if( theDomain->theParList.Num_z != 1 ){
+                  ijk_0 += (Nx+2*Ng)*(Ny+2*Ng)*k;
+                  if( i_n==0 ) ijk_m1 += (Nx+2*Ng)*(Ny+2*Ng)*k;
+                  else ijk_m1 += (Nx+2*Ng)*(Ny+2*Ng)*(k-n[2]);
+               }
+               struct cell * c0  = theCells+ijk_0;
+               struct cell * cm1 = theCells+ijk_m1;
+               c0->Phi_B[q] = (c0->prim[BB1+q]+cm1->prim[BB1+q])/2.*dA;
+            }
+         }   
+      }
+
+      n[q] = 0;
+
+   }
+
 
 }
 

@@ -1,6 +1,5 @@
 
 #include "../defs.h"
-//Lx = 8e-5 for m=0, eta_on=1.3 (same for m=2 for now)
 
 static double t_min, x_zero, y_zero, z_zero, E_ej, M_ej;
 static double gam, D, m, n, rho_t, vt, zeta_m, zeta_e;
@@ -30,6 +29,8 @@ void setICParams( struct domain * theDomain ){
    //vt = pow(zeta_e/zeta_m, 0.5) * pow(E_ej/M_ej, 0.5);
    //rho_t = pow(zeta_m*M_ej, 2.5) * pow(zeta_e*E_ej, -1.5);
    printf("vt = %e, rho_t_0 = %e, A = %e\n",vt, rho_t*pow(t_min,-D), rho_t*pow(vt,m));
+   //Lx = 8e-5 for m=0, eta_on=1.3 (same for m=2 for now)
+
 }
 
 
@@ -60,13 +61,13 @@ void initial( double * prim , double * xi , double t ){
    prim[UU3] = vz;
    if(v<=vt || 1){
       prim[RHO] = rho_t * pow(v/vt , -m) * pow(t,-D) * (1.+ptb);
-      prim[PPP] = pow(v/vt , -m) * pow(t,-D*gam) * 1e-4 * pow(rho_t,gam);
-      prim[XXX] = 0.0;
+      prim[PPP] = rho_t * pow(v/vt , -m) * pow(t,-D*gam) * 1e-8;
+      prim[XXX] = 1e2;
    }
    else{
       prim[RHO] = rho_t * pow(v/vt , -n) * pow(t,-D) * (1.+ptb);
-      prim[PPP] = pow(v/vt , -n) * pow(t,-D*gam) * 1e-4 * pow(rho_t,gam);
-      prim[XXX] = 0.0;
+      prim[PPP] = rho_t * pow(v/vt , -n) * pow(t,-D*gam) * 1e-8;
+      prim[XXX] = 1e-6;
    }
 
 
